@@ -445,6 +445,9 @@ public class CardFactory {
         // Name first so Senty has the Card name
         c.setName(face.getName());
 
+        // Super and 'middle' types should use enums.
+        c.setType(new CardType(face.getType()));
+
         for (String r : face.getReplacements())              c.addReplacementEffect(ReplacementHandler.parseReplacement(r, c, true));
         for (String s : face.getStaticAbilities())           c.addStaticAbility(s);
         for (String t : face.getTriggers())                  c.addTrigger(TriggerHandler.parseTrigger(t, c, true));
@@ -460,9 +463,6 @@ public class CardFactory {
         c.getCurrentState().setBaseLoyalty(face.getInitialLoyalty());
 
         c.setOracleText(face.getOracleText());
-
-        // Super and 'middle' types should use enums.
-        c.setType(new CardType(face.getType()));
 
         c.setColor(face.getColor().getColor());
 

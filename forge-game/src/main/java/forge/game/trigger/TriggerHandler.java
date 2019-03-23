@@ -29,7 +29,6 @@ import forge.game.card.CardLists;
 import forge.game.card.CardUtil;
 import forge.game.card.CardZoneTable;
 import forge.game.keyword.KeywordInterface;
-import forge.game.phase.PhaseType;
 import forge.game.player.Player;
 import forge.game.spellability.Ability;
 import forge.game.spellability.AbilitySub;
@@ -63,6 +62,10 @@ public class TriggerHandler {
 
     public TriggerHandler(final Game gameState) {
         game = gameState;
+    }
+
+    public Iterable<Trigger> getActiveTriggers() {
+        return activeTriggers;
     }
 
     public final void cleanUpTemporaryTriggers() {
@@ -183,16 +186,6 @@ public class TriggerHandler {
         try {
             final TriggerType type = TriggerType.smartValueOf(mapParams.get("Mode"));
             ret = type.createTrigger(mapParams, host, intrinsic);
-
-            String triggerZones = mapParams.get("TriggerZones");
-            if (null != triggerZones) {
-                ret.setActiveZone(EnumSet.copyOf(ZoneType.listValueOf(triggerZones)));
-            }
-
-            String triggerPhases = mapParams.get("Phase");
-            if (null != triggerPhases) {
-                ret.setTriggerPhases(PhaseType.parseRange(triggerPhases));
-            }
         } catch (Exception e) {
             String msg = "TriggerHandler:parseTrigger failed to parse";
             Sentry.getContext().recordBreadcrumb(

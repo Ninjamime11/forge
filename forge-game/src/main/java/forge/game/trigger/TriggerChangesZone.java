@@ -24,8 +24,10 @@ import forge.game.card.CardFactoryUtil;
 import forge.game.cost.IndividualCostPaymentInstance;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityStackInstance;
+import forge.game.zone.ZoneType;
 import forge.util.Expressions;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,6 +63,7 @@ public class TriggerChangesZone extends Trigger {
      */
     public TriggerChangesZone(final Map<String, String> params, final Card host, final boolean intrinsic) {
         super(params, host, intrinsic);
+        correctZones();
     }
 
     /** {@inheritDoc} */
@@ -101,20 +104,13 @@ public class TriggerChangesZone extends Trigger {
             Card moved = (Card) runParams2.get("Card");
             final Game game = getHostCard().getGame();
             boolean leavesBattlefield = "Battlefield".equals(getParam("Origin"));
-            boolean isDiesTrig = leavesBattlefield && "Graveyard".equals(getParam("Destination"));
 
-            if (isDiesTrig) {
+            if (leavesBattlefield) {
                 moved = game.getChangeZoneLKIInfo(moved);
             }
 
             if (!moved.isValid(getParam("ValidCard").split(","), getHostCard().getController(),
                     getHostCard(), null)) {
-                return false;
-            }
-
-            // if it is a die trigger, and the hostcard is the moved one, but it doesn't has the trigger
-            // only for non-static
-            if (!isStatic() && leavesBattlefield && moved.equals(getHostCard()) && !moved.hasTrigger(this)) {
                 return false;
             }
         }
@@ -233,4 +229,42 @@ public class TriggerChangesZone extends Trigger {
         super.resetTurnState();
         this.processedCostEffects.clear();
     }
+
+    protected void correctZones() {
+        // only if host zones isn't set
+        if (validHostZones != null) {
+            return;
+        }
+
+        // in case the game is null (for GUI) the later check does fail
+        if (getHostCard().getGame() == null) {
+            return;
+        }
+
+        if (!hasParam("ValidCard") || !getHostCard().isValid(getParam("ValidCard").split(","),
+                getHostCard().getController(), getHostCard(), null)) {
+            return;
+        }
+
+        boolean leavesBattlefield = false;
+        boolean enterGraveyard = false;
+        if (hasParam("Origin")) {
+            leavesBattlefield = ArrayUtils.contains(
+                getParam("Origin").split(","), "Battlefield"
+            );
+        }
+
+        if (hasParam("Destination")) {
+            enterGraveyard = ArrayUtils.contains(
+                getParam("Destination").split(","), "Graveyard"
+            );
+        }
+
+        if (leavesBattlefield) {
+            setActiveZone(EnumSet.of(ZoneType.Battlefield));
+        } else if (enterGraveyard) {
+            setActiveZone(EnumSet.of(ZoneType.Graveyard));
+        }
+    }
+
 }

@@ -1150,6 +1150,14 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             player.shuffle(sa);
         }
 
+        game.getTriggerHandler().resetActiveTriggers(false);
+
+        // register Trigger from moved Cards LKI
+        for (final Card tc : triggerList.getAllCards()) {
+            final Card lki = game.getChangeZoneLKIInfo(tc);
+            game.getTriggerHandler().registerActiveTrigger(lki, false);
+        }
+
         triggerList.triggerChangesZoneAll(game);
     }
 

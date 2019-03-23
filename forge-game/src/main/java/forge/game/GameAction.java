@@ -388,8 +388,18 @@ public class GameAction {
 
         // Need to apply any static effects to produce correct triggers
         checkStaticAbilities();
+
+        // clear triggers
         game.getTriggerHandler().clearInstrinsicActiveTriggers(c, zoneFrom);
+
+        // need to register LKI for the zone before
         game.getTriggerHandler().registerActiveTrigger(lastKnownInfo, false);
+
+        // in case it is not the same object
+        if (copied != lastKnownInfo) {
+            // need to register new card in other zone
+            game.getTriggerHandler().registerActiveTrigger(copied, false);
+        }
 
         table.triggerCountersPutAll(game);
 
