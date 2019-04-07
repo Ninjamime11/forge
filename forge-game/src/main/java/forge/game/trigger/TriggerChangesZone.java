@@ -246,24 +246,19 @@ public class TriggerChangesZone extends Trigger {
             return;
         }
 
-        boolean leavesBattlefield = false;
-        boolean enterGraveyard = false;
         if (hasParam("Origin")) {
-            leavesBattlefield = ArrayUtils.contains(
+            // leave battlefield
+            boolean leavesBattlefield = ArrayUtils.contains(
                 getParam("Origin").split(","), "Battlefield"
             );
+            if (leavesBattlefield) {
+                setActiveZone(EnumSet.of(ZoneType.Battlefield));
+            }
         }
 
-        if (hasParam("Destination")) {
-            enterGraveyard = ArrayUtils.contains(
-                getParam("Destination").split(","), "Graveyard"
-            );
-        }
-
-        if (leavesBattlefield) {
-            setActiveZone(EnumSet.of(ZoneType.Battlefield));
-        } else if (enterGraveyard) {
-            setActiveZone(EnumSet.of(ZoneType.Graveyard));
+        // enter Zone Effect
+        if (!hasParam("Origin") || "Any".equals(getParam("Origin"))) {
+            setActiveZone(Sets.newEnumSet(ZoneType.listValueOf(getParam("Destination")), ZoneType.class));
         }
     }
 
