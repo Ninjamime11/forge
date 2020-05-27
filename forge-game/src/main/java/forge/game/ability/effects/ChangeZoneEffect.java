@@ -1277,6 +1277,29 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     movedCard = game.getAction().moveToPlay(c, c.getController(), sa, moveParams);
 
                     movedCard.setTimestamp(ts);
+
+                    if (sa.hasParam("AttachAfter")) {
+                        CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachAfter"), sa);
+                        if (list.isEmpty()) {
+                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachAfter"), c.getController(), c, sa);
+                        }
+                        if (!list.isEmpty()) {
+                            Card attachedTo = null;
+                            if (list.size() > 1) {
+                                String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(c.getName()));
+                                Map<String, Object> params = Maps.newHashMap();
+                                params.put("Attach", c);
+                                attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
+                            }
+                            else {
+                                attachedTo = list.get(0);
+                            }
+
+                            if (c.isAttachment()) {
+                                c.attachToEntity(attachedTo);
+                            }
+                        }
+                    }
                 }
                 else if (destination.equals(ZoneType.Exile)) {
                     movedCard = game.getAction().exile(c, sa, moveParams);
