@@ -582,7 +582,13 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachedTo")) {
                         CardCollection list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), gameCard.getController(), gameCard, sa);
+                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), hostCard.getController(), hostCard, sa);
+                        }
+
+                        // only valid choices are when they could be attached
+                        // TODO for multiple Auras entering attached this way, need to use LKI info
+                        if (!list.isEmpty()) {
+                            list = CardLists.filter(list, CardPredicates.canBeAttached(gameCard));
                         }
                         if (!list.isEmpty()) {
                             Map<String, Object> params = Maps.newHashMap();
@@ -670,6 +676,19 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         combatChanged = true;
                     }
                     movedCard.setTimestamp(ts);
+                    if (sa.hasParam("AttachAfter") && movedCard.isAttachment()) {
+                        CardCollection list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachAfter"), sa);
+                        if (list.isEmpty()) {
+                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachAfter"), hostCard.getController(), hostCard, sa);
+                        }
+                        if (!list.isEmpty()) {
+                            String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(gameCard.getName()));
+                            Map<String, Object> params = Maps.newHashMap();
+                            params.put("Attach", gameCard);
+                            Card attachedTo = chooser.getController().chooseSingleEntityForEffect(list, sa, title, params);
+                            movedCard.attachToEntity(attachedTo);
+                        }
+                    }
                 } else {
                     // might set before card is moved only for nontoken
                     Card host = null;
@@ -1225,26 +1244,23 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         }
                     }
 
-                    if (sa.hasParam("AttachedTo")) {
+                    if (sa.hasParam("AttachedTo") && c.isAttachment()) {
                         CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), c.getController(), c, sa);
+                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), source.getController(), source, sa);
+                        }
+                        // only valid choices are when they could be attached
+                        // TODO for multiple Auras entering attached this way, need to use LKI info
+                        if (!list.isEmpty()) {
+                            list = CardLists.filter(list, CardPredicates.canBeAttached(c));
                         }
                         if (!list.isEmpty()) {
-                            Card attachedTo = null;
-                            if (list.size() > 1) {
-                                String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(c.getName()));
-                                Map<String, Object> params = Maps.newHashMap();
-                                params.put("Attach", c);
-                                attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
-                            }
-                            else {
-                                attachedTo = list.get(0);
-                            }
+                            String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(c.getName()));
+                            Map<String, Object> params = Maps.newHashMap();
+                            params.put("Attach", c);
+                            Card attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
 
-                            if (c.isAttachment()) {
-                                c.attachToEntity(attachedTo);
-                            }
+                            c.attachToEntity(attachedTo);
                         }
                         else { // When it should enter the battlefield attached to an illegal permanent it fails
                             continue;
@@ -1278,25 +1294,18 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
 
                     movedCard.setTimestamp(ts);
 
-                    if (sa.hasParam("AttachAfter")) {
+                    if (sa.hasParam("AttachAfter") && movedCard.isAttachment()) {
                         CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachAfter"), sa);
                         if (list.isEmpty()) {
                             list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachAfter"), c.getController(), c, sa);
                         }
                         if (!list.isEmpty()) {
-                            Card attachedTo = null;
-                            if (list.size() > 1) {
-                                String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(c.getName()));
-                                Map<String, Object> params = Maps.newHashMap();
-                                params.put("Attach", c);
-                                attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
-                            }
-                            else {
-                                attachedTo = list.get(0);
-                            }
-
-                            if (c.isAttachment()) {
-                                c.attachToEntity(attachedTo);
+                            String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(c.getName()));
+                            Map<String, Object> params = Maps.newHashMap();
+                            params.put("Attach", movedCard);
+                            Card attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
+                            if (attachedTo != null) {
+                                movedCard.attachToEntity(attachedTo);
                             }
                         }
                     }
