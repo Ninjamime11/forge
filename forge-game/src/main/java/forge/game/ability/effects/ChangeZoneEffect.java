@@ -582,7 +582,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachedTo")) {
                         CardCollection list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), hostCard.getController(), hostCard, sa);
+                            list = CardLists.getValidCards(sa.getLastStateBattlefield(), sa.getParam("AttachedTo"), hostCard.getController(), hostCard, sa);
                         }
 
                         // only valid choices are when they could be attached
@@ -594,7 +594,10 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                             Map<String, Object> params = Maps.newHashMap();
                             params.put("Attach", gameCard);
                             Card attachedTo = player.getController().chooseSingleEntityForEffect(list, sa, Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", gameCard.toString()), params);
-                            gameCard.attachToEntity(attachedTo);
+
+                            // TODO can't attach later or moveToPlay would attach indirectly
+                            // bypass canBeAttached to skip Protection checks when trying to attach multiple auras that would grant protection
+                            gameCard.attachToEntity(game.getCardState(attachedTo), true);
                         } else { // When it should enter the battlefield attached to an illegal permanent it fails
                             continue;
                         }
@@ -1247,7 +1250,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachedTo") && c.isAttachment()) {
                         CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachedTo"), source.getController(), source, sa);
+                            list = CardLists.getValidCards(sa.getLastStateBattlefield(), sa.getParam("AttachedTo"), source.getController(), source, sa);
                         }
                         // only valid choices are when they could be attached
                         // TODO for multiple Auras entering attached this way, need to use LKI info
@@ -1260,7 +1263,9 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                             params.put("Attach", c);
                             Card attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
 
-                            c.attachToEntity(attachedTo);
+                            // TODO can't attach later or moveToPlay would attach indirectly
+                            // bypass canBeAttached to skip Protection checks when trying to attach multiple auras that would grant protection
+                            c.attachToEntity(game.getCardState(attachedTo), true);
                         }
                         else { // When it should enter the battlefield attached to an illegal permanent it fails
                             continue;
@@ -1304,9 +1309,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                             Map<String, Object> params = Maps.newHashMap();
                             params.put("Attach", movedCard);
                             Card attachedTo = decider.getController().chooseSingleEntityForEffect(list, sa, title, params);
-                            if (attachedTo != null) {
-                                movedCard.attachToEntity(attachedTo);
-                            }
+                            movedCard.attachToEntity(attachedTo);
                         }
                     }
                 }

@@ -3418,7 +3418,10 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars {
     }
 
     public final void attachToEntity(final GameEntity entity) {
-        if (!entity.canBeAttached(this)) {
+        attachToEntity(entity, false);
+    }
+    public final void attachToEntity(final GameEntity entity, boolean overwrite) {
+        if (!overwrite && !entity.canBeAttached(this)) {
             return;
         }
 

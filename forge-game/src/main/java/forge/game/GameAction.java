@@ -1206,6 +1206,7 @@ public class GameAction {
             }
             CardCollection noRegCreats = null;
             CardCollection desCreats = null;
+            CardCollection unAttachList = new CardCollection();
             for (final Card c : game.getCardsIn(ZoneType.Battlefield)) {
                 if (c.isCreature()) {
                     // Rule 704.5f - Put into grave (no regeneration) for toughness <= 0
@@ -1240,7 +1241,7 @@ public class GameAction {
                 }
 
                 checkAgain |= stateBasedAction_Saga(c, table);
-                checkAgain |= stateBasedAction704_attach(c, table); // Attachment
+                checkAgain |= stateBasedAction704_attach(c, unAttachList); // Attachment
 
                 if (c.isCreature() && c.isAttachedToEntity()) { // Rule 704.5q - Creature attached to an object or player, becomes unattached
                     c.unattachFromEntity(c.getEntityAttachedTo());
@@ -1274,6 +1275,18 @@ public class GameAction {
 
                 if (checkAgain) {
                     cardsToUpdateLKI.add(c);
+                }
+            }
+            for (Card u : unAttachList) {
+                u.unattachFromEntity(u.getEntityAttachedTo());
+
+                // cleanup aura
+                if (u.isAura() && u.isInPlay() && !u.isEnchanting()) {
+                    if (noRegCreats == null) {
+                        noRegCreats = new CardCollection();
+                    }
+                    noRegCreats.add(u);
+                    checkAgain = true;
                 }
             }
 
@@ -1400,13 +1413,13 @@ public class GameAction {
         }
     }
 
-    private boolean stateBasedAction704_attach(Card c, CardZoneTable table) {
+    private boolean stateBasedAction704_attach(Card c, CardCollection unAttachList) {
         boolean checkAgain = false;
 
         if (c.isAttachedToEntity()) {
             final GameEntity ge = c.getEntityAttachedTo();
             if (!ge.canBeAttached(c, true)) {
-                c.unattachFromEntity(ge);
+                unAttachList.add(c);
                 checkAgain = true;
             }
         }
@@ -1414,17 +1427,12 @@ public class GameAction {
         if (c.hasCardAttachments()) {
             for (final Card attach : Lists.newArrayList(c.getAttachedCards())) {
                 if (!attach.isInPlay()) {
-                    attach.unattachFromEntity(c);
+                    unAttachList.add(attach);
                     checkAgain = true;
                 }
             }
         }
 
-        // cleanup aura
-        if (c.isAura() && c.isInPlay() && !c.isEnchanting()) {
-            sacrificeDestroy(c, null, table, null);
-            checkAgain = true;
-        }
         return checkAgain;
     }
 

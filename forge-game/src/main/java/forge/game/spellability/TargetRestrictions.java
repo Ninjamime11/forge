@@ -478,9 +478,11 @@ public class TargetRestrictions {
      */
     public final boolean hasCandidates(final SpellAbility sa, final boolean isTargeted) {
         final Game game = sa.getHostCard().getGame();
-        for (Player player : game.getPlayers()) {
-            if (sa.canTarget(player)) {
-                return true;
+        if (isTargeted) {
+            for (Player player : game.getPlayers()) {
+                if (sa.canTarget(player)) {
+                    return true;
+                }
             }
         }
 
