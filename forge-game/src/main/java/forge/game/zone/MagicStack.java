@@ -150,10 +150,6 @@ public class MagicStack /* extends MyObservable */ implements Iterable<SpellAbil
                 cause.setLastStateGraveyard(game.getLastStateGraveyard());
 
                 source.setCastSA(cause);
-
-                // need to set for Ability too
-                ability.setLastStateBattlefield(game.getLastStateBattlefield());
-                ability.setLastStateGraveyard(game.getLastStateGraveyard());
             }
             source.cleanupExiledWith();
         }

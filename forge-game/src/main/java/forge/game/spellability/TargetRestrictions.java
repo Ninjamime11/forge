@@ -477,18 +477,24 @@ public class TargetRestrictions {
      * @return a boolean.
      */
     public final boolean hasCandidates(final SpellAbility sa, final boolean isTargeted) {
-        final Game game = sa.getHostCard().getGame();
-        if (isTargeted) {
-            for (Player player : game.getPlayers()) {
-                if (sa.canTarget(player)) {
-                    return true;
-                }
-            }
-        }
+        final Card srcCard = sa.getHostCard(); // should there be OrginalHost at any moment?
+        final Game game = srcCard.getGame();
 
         this.applyTargetTextChanges(sa);
 
-        final Card srcCard = sa.getHostCard(); // should there be OrginalHost at any moment?
+        for (Player player : game.getPlayers()) {
+            if (!player.isValid(this.validTgts, sa.getActivatingPlayer(), srcCard, sa)) {
+                continue;
+            }
+            if (isTargeted && !sa.canTarget(player)) {
+                continue;
+            }
+            if (sa.getTargets().contains(player)) {
+                continue;
+            }
+            return true;
+        }
+
         if (this.tgtZone.contains(ZoneType.Stack)) {
             // Stack Zone targets are considered later
             return true;

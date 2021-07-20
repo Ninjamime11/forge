@@ -496,6 +496,8 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
             chooser = AbilityUtils.getDefinedPlayers(hostCard, sa.getParam("Chooser"), sa).get(0);
         }
 
+        CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
+
         for (final Card tgtC : tgtCards) {
             final Card gameCard = game.getCardState(tgtC, null);
             // gameCard is LKI in that case, the card is not in game anymore
@@ -582,7 +584,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachedTo")) {
                         CardCollection list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(sa.getLastStateBattlefield(), sa.getParam("AttachedTo"), hostCard.getController(), hostCard, sa);
+                            list = CardLists.getValidCards(lastStateBattlefield, sa.getParam("AttachedTo"), hostCard.getController(), hostCard, sa);
                         }
 
                         // only valid choices are when they could be attached
@@ -682,7 +684,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachAfter") && movedCard.isAttachment()) {
                         CardCollection list = AbilityUtils.getDefinedCards(hostCard, sa.getParam("AttachAfter"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachAfter"), hostCard.getController(), hostCard, sa);
+                            list = CardLists.getValidCards(lastStateBattlefield, sa.getParam("AttachAfter"), hostCard.getController(), hostCard, sa);
                         }
                         if (!list.isEmpty()) {
                             String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(gameCard.getName()));
@@ -1187,6 +1189,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
 
         boolean combatChanged = false;
         final CardZoneTable triggerList = new CardZoneTable();
+        CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
 
         for (Player player : HiddenOriginChoicesMap.keySet()) {
             boolean searchedLibrary = HiddenOriginChoicesMap.get(player).searchedLibrary;
@@ -1250,7 +1253,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachedTo") && c.isAttachment()) {
                         CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachedTo"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(sa.getLastStateBattlefield(), sa.getParam("AttachedTo"), source.getController(), source, sa);
+                            list = CardLists.getValidCards(lastStateBattlefield, sa.getParam("AttachedTo"), source.getController(), source, sa);
                         }
                         // only valid choices are when they could be attached
                         // TODO for multiple Auras entering attached this way, need to use LKI info
@@ -1302,7 +1305,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     if (sa.hasParam("AttachAfter") && movedCard.isAttachment()) {
                         CardCollection list = AbilityUtils.getDefinedCards(source, sa.getParam("AttachAfter"), sa);
                         if (list.isEmpty()) {
-                            list = CardLists.getValidCards(game.getCardsIn(ZoneType.Battlefield), sa.getParam("AttachAfter"), c.getController(), c, sa);
+                            list = CardLists.getValidCards(lastStateBattlefield, sa.getParam("AttachAfter"), c.getController(), c, sa);
                         }
                         if (!list.isEmpty()) {
                             String title = Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(c.getName()));
