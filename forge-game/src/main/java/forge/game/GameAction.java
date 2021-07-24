@@ -68,6 +68,7 @@ import forge.game.mulligan.MulliganService;
 import forge.game.player.GameLossReason;
 import forge.game.player.Player;
 import forge.game.player.PlayerActionConfirmMode;
+import forge.game.player.PlayerPredicates;
 import forge.game.replacement.ReplacementEffect;
 import forge.game.replacement.ReplacementResult;
 import forge.game.replacement.ReplacementType;
@@ -155,6 +156,25 @@ public class GameAction {
         // in their previous zone
         if (toBattlefield && !c.isPermanent()) {
             return c;
+        }
+
+        // Aura entering indirectly
+        // need to check before it enters
+        if (c.isAura() && !c.isAttachedToEntity() && toBattlefield && (zoneFrom == null || !zoneFrom.is(ZoneType.Stack))) {
+            boolean found = false;
+            if (Iterables.any(game.getPlayers(),PlayerPredicates.canBeAttached(c))) {
+                found = true;
+            }
+            // TODO need to use LKI Zones
+            if (Iterables.any(game.getCardsIn(ZoneType.Battlefield), CardPredicates.canBeAttached(c))) {
+                found = true;
+            }
+            if (Iterables.any(game.getCardsIn(ZoneType.Graveyard), CardPredicates.canBeAttached(c))) {
+                found = true;
+            }
+            if (!found) {
+                return c;
+            }
         }
 
         // LKI is only needed when something is moved from the battlefield.
@@ -357,6 +377,28 @@ public class GameAction {
         }
 
         copied.getOwner().removeInboundToken(copied);
+
+        // Aura entering as Copy from stack
+        // without targets it is sent to graveyard
+        if (copied.isAura() && !copied.isAttachedToEntity() && toBattlefield && zoneFrom != null && zoneFrom.is(ZoneType.Stack) && game.getStack().isResolving(c)) {
+            boolean found = false;
+            if (Iterables.any(game.getPlayers(),PlayerPredicates.canBeAttached(copied))) {
+                found = true;
+            }
+            // TODO need to use LKI Zones
+            if (Iterables.any(game.getCardsIn(ZoneType.Battlefield), CardPredicates.canBeAttached(copied))) {
+                found = true;
+            }
+            if (Iterables.any(game.getCardsIn(ZoneType.Graveyard), CardPredicates.canBeAttached(copied))) {
+                found = true;
+            }
+            if (!found) {
+                return moveToGraveyard(copied, cause, params);
+            } else {
+                // TODO use LKI Zones
+                AttachEffect.attachAuraOnIndirectEnterBattlefield(copied);
+            }
+        }
 
         // Handle merged permanent here so all replacement effects are already applied.
         CardCollection mergedCards = null;
@@ -723,8 +765,8 @@ public class GameAction {
             c.setCastSA(null);
         }
 
-        if (c.isAura() && zoneTo.is(ZoneType.Battlefield) && ((zoneFrom == null) || !zoneFrom.is(ZoneType.Stack))
-                && !c.isEnchanting()) {
+        if (c.isAura() && zoneTo.is(ZoneType.Battlefield) && !c.isEnchanting()
+                && (zoneFrom == null || !zoneFrom.is(ZoneType.Stack) || (cause != null && !ApiType.Attach.equals(cause.getApi())))) {
             // TODO Need a way to override this for Abilities that put Auras
             // into play attached to things
             AttachEffect.attachAuraOnIndirectEnterBattlefield(c);
@@ -1243,11 +1285,6 @@ public class GameAction {
                 checkAgain |= stateBasedAction_Saga(c, table);
                 checkAgain |= stateBasedAction704_attach(c, unAttachList); // Attachment
 
-                if (c.isCreature() && c.isAttachedToEntity()) { // Rule 704.5q - Creature attached to an object or player, becomes unattached
-                    c.unattachFromEntity(c.getEntityAttachedTo());
-                    checkAgain = true;
-                }
-
                 checkAgain |= stateBasedAction704_5r(c); // annihilate +1/+1 counters with -1/-1 ones
 
                 final CounterType dreamType = CounterType.get(CounterEnumType.DREAM);
@@ -1273,6 +1310,14 @@ public class GameAction {
                     }
                 }
 
+                // cleanup aura
+                if (c.isAura() && c.isInPlay() && !c.isEnchanting()) {
+                    if (noRegCreats == null) {
+                        noRegCreats = new CardCollection();
+                    }
+                    noRegCreats.add(c);
+                    checkAgain = true;
+                }
                 if (checkAgain) {
                     cardsToUpdateLKI.add(c);
                 }
@@ -1432,7 +1477,10 @@ public class GameAction {
                 }
             }
         }
-
+        if (c.isCreature() && c.isAttachedToEntity()) { // Rule 704.5q - Creature attached to an object or player, becomes unattached
+            unAttachList.add(c);
+            checkAgain = true;
+        }
         return checkAgain;
     }
 
