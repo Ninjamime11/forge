@@ -175,14 +175,6 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
                     AbilityUtils.resolve(sa.getAdditionalAbility("AnimateSubAbility"));
                     source.removeRemembered(c);
                 }
-
-                // Auras without Candidates stay in their current location
-                if (c.isAura()) {
-                    final SpellAbility saAura = c.getFirstAttachSpell();
-                    if (saAura != null && !saAura.getTargetRestrictions().hasCandidates(saAura, false)) {
-                        continue;
-                    }
-                }
                 if (sa.hasParam("Tapped")) {
                     c.setTapped(true);
                 }
@@ -206,49 +198,49 @@ public class ChangeZoneAllEffect extends SpellAbilityEffect {
                 }
             }
 
-            if (remember != null) {
-                final Card newSource = game.getCardState(source);
-                newSource.addRemembered(movedCard);
-                if (!source.isRemembered(movedCard)) {
-                    source.addRemembered(movedCard);
-                }
-                if (c.getMeldedWith() != null) {
-                    Card meld = game.getCardState(c.getMeldedWith(), null);
-                    if (meld != null) {
-                        newSource.addRemembered(meld);
-                        if (!source.isRemembered(meld)) {
-                            source.addRemembered(meld);
-                        }
-                    }
-                }
-                if (c.hasMergedCard()) {
-                    for (final Card card : c.getMergedCards()) {
-                        if (card == c) continue;
-                        newSource.addRemembered(card);
-                        if (!source.isRemembered(card)) {
-                            source.addRemembered(card);
-                        }
-                    }
-                }
-            }
-            if (remLKI && movedCard != null) {
-                final Card lki = CardUtil.getLKICopy(c);
-                game.getCardState(source).addRemembered(lki);
-                if (!source.isRemembered(lki)) {
-                    source.addRemembered(lki);
-                }
-            }
-            if (forget != null) {
-                game.getCardState(source).removeRemembered(c);
-            }
-            if (imprint != null) {
-                game.getCardState(source).addImprintedCard(movedCard);
-            }
-            if (destination == ZoneType.Battlefield) {
-                movedCard.setTimestamp(ts);
-            }
-
             if (!movedCard.getZone().equals(originZone)) {
+                if (remember != null) {
+                    final Card newSource = game.getCardState(source);
+                    newSource.addRemembered(movedCard);
+                    if (!source.isRemembered(movedCard)) {
+                        source.addRemembered(movedCard);
+                    }
+                    if (c.getMeldedWith() != null) {
+                        Card meld = game.getCardState(c.getMeldedWith(), null);
+                        if (meld != null) {
+                            newSource.addRemembered(meld);
+                            if (!source.isRemembered(meld)) {
+                                source.addRemembered(meld);
+                            }
+                        }
+                    }
+                    if (c.hasMergedCard()) {
+                        for (final Card card : c.getMergedCards()) {
+                            if (card == c) continue;
+                            newSource.addRemembered(card);
+                            if (!source.isRemembered(card)) {
+                                source.addRemembered(card);
+                            }
+                        }
+                    }
+                }
+                if (remLKI && movedCard != null) {
+                    final Card lki = CardUtil.getLKICopy(c);
+                    game.getCardState(source).addRemembered(lki);
+                    if (!source.isRemembered(lki)) {
+                        source.addRemembered(lki);
+                    }
+                }
+                if (forget != null) {
+                    game.getCardState(source).removeRemembered(c);
+                }
+                if (imprint != null) {
+                    game.getCardState(source).addImprintedCard(movedCard);
+                }
+                if (destination == ZoneType.Battlefield) {
+                    movedCard.setTimestamp(ts);
+                }
+
                 triggerList.put(originZone.getZoneType(), movedCard.getZone().getZoneType(), movedCard);
 
                 if (c.getMeldedWith() != null) {

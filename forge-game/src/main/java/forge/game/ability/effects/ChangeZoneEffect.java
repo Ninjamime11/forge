@@ -638,20 +638,6 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                         hostCard.removeRemembered(gameCard);
                     }
 
-                    // Auras without Candidates stay in their current location
-                    if (gameCard.isAura()) {
-                        final SpellAbility saAura = gameCard.getFirstAttachSpell();
-                        if (saAura != null) {
-                            saAura.setActivatingPlayer(sa.getActivatingPlayer());
-                            if (!saAura.getTargetRestrictions().hasCandidates(saAura, false)) {
-                                if (sa.hasAdditionalAbility("AnimateSubAbility")) {
-                                    gameCard.removeChangedState();
-                                }
-                                continue;
-                            }
-                        }
-                    }
-
                     // need to be facedown before it hits the battlefield in case of Replacement Effects or Trigger
                     if (sa.hasParam("FaceDown")) {
                         gameCard.turnFaceDown(true);
@@ -659,7 +645,11 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     }
 
                     movedCard = game.getAction().moveTo(gameCard.getController().getZone(destination), gameCard, sa, moveParams);
-                    if (sa.hasParam("Unearth")) {
+                    // below stuff only if it changed zones
+                    if (!movedCard.getZone().equals(originZone)) {
+                        continue;
+                    }
+                    if (sa.hasParam("Unearth") && movedCard.isInPlay()) {
                         movedCard.setUnearthed(true);
                         movedCard.addChangedCardKeywords(Lists.newArrayList("Haste"), null, false, false,
                                 game.getNextTimestamp(), true);

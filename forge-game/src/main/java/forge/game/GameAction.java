@@ -173,6 +173,8 @@ public class GameAction {
                 found = true;
             }
             if (!found) {
+                c.clearControllers();
+                c.removeChangedState();
                 return c;
             }
         }
