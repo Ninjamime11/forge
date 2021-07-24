@@ -472,11 +472,9 @@ public class TargetRestrictions {
      * 
      * @param sa
      *            the sa
-     * @param isTargeted
-     *            Check Valid Candidates and Targeting
      * @return a boolean.
      */
-    public final boolean hasCandidates(final SpellAbility sa, final boolean isTargeted) {
+    public final boolean hasCandidates(final SpellAbility sa) {
         final Card srcCard = sa.getHostCard(); // should there be OrginalHost at any moment?
         final Game game = srcCard.getGame();
 
@@ -486,7 +484,7 @@ public class TargetRestrictions {
             if (!player.isValid(this.validTgts, sa.getActivatingPlayer(), srcCard, sa)) {
                 continue;
             }
-            if (isTargeted && !sa.canTarget(player)) {
+            if (!sa.canTarget(player)) {
                 continue;
             }
             if (sa.getTargets().contains(player)) {
@@ -503,7 +501,7 @@ public class TargetRestrictions {
             if (!c.isValid(this.validTgts, sa.getActivatingPlayer(), srcCard, sa)) {
                 continue;
             }
-            if (isTargeted && !sa.canTarget(c)) {
+            if (!sa.canTarget(c)) {
                 continue;
             }
             if (sa.getTargets().contains(c)) {
