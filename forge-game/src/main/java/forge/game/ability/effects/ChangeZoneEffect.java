@@ -497,6 +497,7 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
         }
 
         CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
+        CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
 
         for (final Card tgtC : tgtCards) {
             final Card gameCard = game.getCardState(tgtC, null);
@@ -619,6 +620,8 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                     }
 
                     Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
+                    moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
+                    moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
                     if (sa.isReplacementAbility()) {
                         ReplacementEffect re = sa.getReplacementEffect();
                         moveParams.put(AbilityKey.ReplacementEffect, re);
@@ -1179,7 +1182,9 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
 
         boolean combatChanged = false;
         final CardZoneTable triggerList = new CardZoneTable();
+
         CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
+        CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
 
         for (Player player : HiddenOriginChoicesMap.keySet()) {
             boolean searchedLibrary = HiddenOriginChoicesMap.get(player).searchedLibrary;
@@ -1197,6 +1202,8 @@ public class ChangeZoneEffect extends SpellAbilityEffect {
                 final Zone originZone = game.getZoneOf(c);
                 Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
                 moveParams.put(AbilityKey.FoundSearchingLibrary,  searchedLibrary);
+                moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
+                moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
                 if (destination.equals(ZoneType.Library)) {
                     movedCard = game.getAction().moveToLibrary(c, libraryPos, sa, moveParams);
                 }

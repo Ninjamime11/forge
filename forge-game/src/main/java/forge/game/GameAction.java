@@ -43,7 +43,6 @@ import forge.game.ability.AbilityFactory;
 import forge.game.ability.AbilityKey;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.ApiType;
-import forge.game.ability.effects.AttachEffect;
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
 import forge.game.card.CardCollectionView;
@@ -74,6 +73,7 @@ import forge.game.replacement.ReplacementResult;
 import forge.game.replacement.ReplacementType;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityPredicates;
+import forge.game.spellability.TargetRestrictions;
 import forge.game.staticability.StaticAbility;
 import forge.game.staticability.StaticAbilityLayer;
 import forge.game.trigger.TriggerType;
@@ -83,7 +83,9 @@ import forge.game.zone.Zone;
 import forge.game.zone.ZoneType;
 import forge.item.PaperCard;
 import forge.util.Aggregates;
+import forge.util.CardTranslation;
 import forge.util.Expressions;
+import forge.util.Localizer;
 import forge.util.MyRandom;
 import forge.util.ThreadUtil;
 import forge.util.Visitor;
@@ -165,16 +167,17 @@ public class GameAction {
             if (Iterables.any(game.getPlayers(),PlayerPredicates.canBeAttached(c))) {
                 found = true;
             }
-            // TODO need to use LKI Zones
-            if (Iterables.any(game.getCardsIn(ZoneType.Battlefield), CardPredicates.canBeAttached(c))) {
+            if (Iterables.any((CardCollectionView) params.get(AbilityKey.LastStateBattlefield), CardPredicates.canBeAttached(c))) {
                 found = true;
             }
-            if (Iterables.any(game.getCardsIn(ZoneType.Graveyard), CardPredicates.canBeAttached(c))) {
+            if (Iterables.any((CardCollectionView) params.get(AbilityKey.LastStateGraveyard), CardPredicates.canBeAttached(c))) {
                 found = true;
             }
             if (!found) {
                 c.clearControllers();
-                c.removeChangedState();
+                if (c.removeChangedState()) {
+                    c.updateStateForView();
+                }
                 return c;
             }
         }
@@ -382,24 +385,23 @@ public class GameAction {
 
         // Aura entering as Copy from stack
         // without targets it is sent to graveyard
-        if (copied.isAura() && !copied.isAttachedToEntity() && toBattlefield && zoneFrom != null && zoneFrom.is(ZoneType.Stack) && game.getStack().isResolving(c)) {
-            boolean found = false;
-            if (Iterables.any(game.getPlayers(),PlayerPredicates.canBeAttached(copied))) {
-                found = true;
+        if (copied.isAura() && !copied.isAttachedToEntity() && toBattlefield) {
+            if (zoneFrom != null && zoneFrom.is(ZoneType.Stack) && game.getStack().isResolving(c)) {
+                boolean found = false;
+                if (Iterables.any(game.getPlayers(),PlayerPredicates.canBeAttached(copied))) {
+                    found = true;
+                }
+                if (Iterables.any((CardCollectionView) params.get(AbilityKey.LastStateBattlefield), CardPredicates.canBeAttached(copied))) {
+                    found = true;
+                }
+                if (Iterables.any((CardCollectionView) params.get(AbilityKey.LastStateGraveyard), CardPredicates.canBeAttached(copied))) {
+                    found = true;
+                }
+                if (!found) {
+                    return moveToGraveyard(copied, cause, params);
+                }
             }
-            // TODO need to use LKI Zones
-            if (Iterables.any(game.getCardsIn(ZoneType.Battlefield), CardPredicates.canBeAttached(copied))) {
-                found = true;
-            }
-            if (Iterables.any(game.getCardsIn(ZoneType.Graveyard), CardPredicates.canBeAttached(copied))) {
-                found = true;
-            }
-            if (!found) {
-                return moveToGraveyard(copied, cause, params);
-            } else {
-                // TODO use LKI Zones
-                AttachEffect.attachAuraOnIndirectEnterBattlefield(copied);
-            }
+            attachAuraOnIndirectEnterBattlefield(copied, params);
         }
 
         // Handle merged permanent here so all replacement effects are already applied.
@@ -767,13 +769,6 @@ public class GameAction {
             c.setCastSA(null);
         }
 
-        if (c.isAura() && zoneTo.is(ZoneType.Battlefield) && !c.isEnchanting()
-                && (zoneFrom == null || !zoneFrom.is(ZoneType.Stack) || (cause != null && !ApiType.Attach.equals(cause.getApi())))) {
-            // TODO Need a way to override this for Abilities that put Auras
-            // into play attached to things
-            AttachEffect.attachAuraOnIndirectEnterBattlefield(c);
-        }
-
         if (c.isRealCommander()) {
             c.setMoveToCommandZone(true);
         }
@@ -867,13 +862,8 @@ public class GameAction {
         return moveTo(hand, c, cause, params);
     }
 
-    public final Card moveToPlay(final Card c, SpellAbility cause) {
-        final PlayerZone play = c.getController().getZone(ZoneType.Battlefield);
-        return moveTo(play, c, cause, null);
-    }
-
-    public final Card moveToPlay(final Card c, final Player p, SpellAbility cause) {
-        return moveToPlay(c, p, cause, null);
+    public final Card moveToPlay(final Card c, SpellAbility cause, Map<AbilityKey, Object> params) {
+        return moveToPlay(c, c.getController(), cause, params);
     }
 
     public final Card moveToPlay(final Card c, final Player p, SpellAbility cause, Map<AbilityKey, Object> params) {
@@ -2285,5 +2275,71 @@ public class GameAction {
         final Map<AbilityKey, Object> runParams = AbilityKey.mapFromCard(dungeon);
         runParams.put(AbilityKey.Player, player);
         game.getTriggerHandler().runTrigger(TriggerType.DungeonCompleted, runParams, false);
+    }
+
+    /**
+     * Attach aura on indirect enter battlefield.
+     *
+     * @param source
+     *            the source
+     * @return true, if successful
+     */
+    public static boolean attachAuraOnIndirectEnterBattlefield(final Card source, Map<AbilityKey, Object> params) {
+        // When an Aura ETB without being cast you can choose a valid card to
+        // attach it to
+        final SpellAbility aura = source.getFirstAttachSpell();
+
+        if (aura == null) {
+            return false;
+        }
+        aura.setActivatingPlayer(source.getController());
+        final Game game = source.getGame();
+        final TargetRestrictions tgt = aura.getTargetRestrictions();
+
+        Player p = source.getController();
+        if (tgt.canTgtPlayer()) {
+            final FCollection<Player> players = new FCollection<>();
+
+            for (Player player : game.getPlayers()) {
+                if (player.isValid(tgt.getValidTgts(), aura.getActivatingPlayer(), source, aura)) {
+                    players.add(player);
+                }
+            }
+            final Player pa = p.getController().chooseSingleEntityForEffect(players, aura,
+                    Localizer.getInstance().getMessage("lblSelectAPlayerAttachSourceTo", CardTranslation.getTranslatedName(source.getName())), null);
+            if (pa != null) {
+                source.attachToEntity(pa);
+                return true;
+            }
+        }
+        else {
+            List<ZoneType> zones = Lists.newArrayList(tgt.getZone());
+            CardCollection list = new CardCollection();
+
+            if (params != null) {
+                if (zones.contains(ZoneType.Battlefield)) {
+                    list.addAll((CardCollectionView) params.get(AbilityKey.LastStateBattlefield));
+                    zones.remove(ZoneType.Battlefield);
+                }
+                if (zones.contains(ZoneType.Graveyard)) {
+                    list.addAll((CardCollectionView) params.get(AbilityKey.LastStateGraveyard));
+                    zones.remove(ZoneType.Graveyard);
+                }
+            }
+            list.addAll(game.getCardsIn(zones));
+
+            list = CardLists.getValidCards(list, tgt.getValidTgts(), aura.getActivatingPlayer(), source, aura);
+            if (list.isEmpty()) {
+                return false;
+            }
+
+            final Card o = p.getController().chooseSingleEntityForEffect(list, aura,
+                    Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(source.getName())), null);
+            if (o != null) {
+                source.attachToEntity(game.getCardState(o), true);
+                return true;
+            }
+        }
+        return false;
     }
 }

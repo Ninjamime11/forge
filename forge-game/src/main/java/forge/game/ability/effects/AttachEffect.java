@@ -7,6 +7,7 @@ import java.util.Map;
 import forge.game.Game;
 import forge.game.GameEntity;
 import forge.game.GameObject;
+import forge.game.ability.AbilityKey;
 import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
@@ -17,7 +18,6 @@ import forge.game.card.CardZoneTable;
 import forge.game.card.CardPredicates;
 import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
-import forge.game.spellability.TargetRestrictions;
 import forge.game.zone.ZoneType;
 import forge.util.CardTranslation;
 import forge.util.Lang;
@@ -39,9 +39,16 @@ public class AttachEffect extends SpellAbilityEffect {
 
             ZoneType previousZone = host.getZone().getZoneType();
 
+            CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
+            CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
+
+            Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
+            moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
+            moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
+
             // The Spell_Permanent (Auras) version of this AF needs to
             // move the card into play before Attaching
-            final Card c = game.getAction().moveToPlay(host, sa);
+            final Card c = game.getAction().moveToPlay(host, host.getController(), sa, moveParams);
             sa.setHostCard(c);
 
             ZoneType newZone = c.getZone().getZoneType();
@@ -157,57 +164,5 @@ public class AttachEffect extends SpellAbilityEffect {
 
         sb.append(Lang.joinHomogenous(targets));
         return sb.toString();
-    }
-
-    /**
-     * Attach aura on indirect enter battlefield.
-     *
-     * @param source
-     *            the source
-     * @return true, if successful
-     */
-    public static boolean attachAuraOnIndirectEnterBattlefield(final Card source) {
-        // When an Aura ETB without being cast you can choose a valid card to
-        // attach it to
-        final SpellAbility aura = source.getFirstAttachSpell();
-
-        if (aura == null) {
-            return false;
-        }
-        aura.setActivatingPlayer(source.getController());
-        final Game game = source.getGame();
-        final TargetRestrictions tgt = aura.getTargetRestrictions();
-
-        Player p = source.getController();
-        if (tgt.canTgtPlayer()) {
-            final FCollection<Player> players = new FCollection<>();
-
-            for (Player player : game.getPlayers()) {
-                if (player.isValid(tgt.getValidTgts(), aura.getActivatingPlayer(), source, aura)) {
-                    players.add(player);
-                }
-            }
-            final Player pa = p.getController().chooseSingleEntityForEffect(players, aura,
-                    Localizer.getInstance().getMessage("lblSelectAPlayerAttachSourceTo", CardTranslation.getTranslatedName(source.getName())), null);
-            if (pa != null) {
-                source.attachToEntity(pa);
-                return true;
-            }
-        }
-        else {
-            CardCollectionView list = game.getCardsIn(tgt.getZone());
-            list = CardLists.getValidCards(list, tgt.getValidTgts(), aura.getActivatingPlayer(), source, aura);
-            if (list.isEmpty()) {
-                return false;
-            }
-
-            final Card o = p.getController().chooseSingleEntityForEffect(list, aura,
-                    Localizer.getInstance().getMessage("lblSelectACardAttachSourceTo", CardTranslation.getTranslatedName(source.getName())), null);
-            if (o != null) {
-                source.attachToEntity(o);
-                return true;
-            }
-        }
-        return false;
     }
 }

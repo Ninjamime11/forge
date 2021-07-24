@@ -1243,7 +1243,7 @@ public abstract class GameState {
                         p.getGame().getAction().moveTo(ZoneType.Battlefield, c, null);
                     } else {
                         p.getZone(ZoneType.Hand).add(c);
-                        p.getGame().getAction().moveToPlay(c, null);
+                        p.getGame().getAction().moveToPlay(c, null, null);
                     }
 
                     c.setTapped(tapped);
@@ -1263,7 +1263,7 @@ public abstract class GameState {
      * <p>
      * processCardsForZone.
      * </p>
-     * 
+     *
      * @param data
      *            an array of {@link java.lang.String} objects.
      * @param player
@@ -1282,7 +1282,7 @@ public abstract class GameState {
                     break;
                 }
             }
-            
+
             Card c;
             boolean hasSetCurSet = false;
             if (cardinfo[0].startsWith("t:")) {
@@ -1329,7 +1329,7 @@ public abstract class GameState {
                     c.setState(CardStateName.Meld, true);
                 } else if (info.startsWith("Modal")) {
                     c.setState(CardStateName.Modal, true);
-                } 
+                }
                 else if (info.startsWith("OnAdventure")) {
                     String abAdventure = "DB$ Effect | RememberObjects$ Self | StaticAbilities$ Play | ExileOnMoved$ Exile | Duration$ Permanent | ConditionDefined$ Self | ConditionPresent$ Card.nonCopiedSpell";
                     SpellAbility saAdventure = AbilityFactory.getAbility(abAdventure, c);

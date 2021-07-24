@@ -691,7 +691,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars {
         return false;
     }
 
-    public Card manifest(Player p, SpellAbility sa) {
+    public Card manifest(Player p, SpellAbility sa, Map<AbilityKey, Object> params) {
         // Turn Face Down (even if it's DFC).
         // Sometimes cards are manifested while already being face down
         if (!turnFaceDown(true) && !isFaceDown()) {
@@ -706,7 +706,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars {
         // Mark this card as "manifested"
         setManifested(true);
 
-        Card c = game.getAction().moveToPlay(this, p, sa);
+        Card c = game.getAction().moveToPlay(this, p, sa, params);
         if (c.isInPlay()) {
             c.setManifested(true);
             c.turnFaceDown(true);
