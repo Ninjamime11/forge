@@ -21,6 +21,9 @@ public class ETBReplacementEffect extends SpellAbilityEffect {
         Map<AbilityKey, Object> params = AbilityKey.newMap();
         params.put(AbilityKey.CardLKI, sa.getReplacingObject(AbilityKey.CardLKI));
         params.put(AbilityKey.ReplacementEffect, sa.getReplacementEffect());
+        params.put(AbilityKey.LastStateBattlefield, sa.getReplacingObject(AbilityKey.LastStateBattlefield));
+        params.put(AbilityKey.LastStateGraveyard, sa.getReplacingObject(AbilityKey.LastStateGraveyard));
+
         final SpellAbility root = sa.getRootAbility();
         SpellAbility cause = (SpellAbility) root.getReplacingObject(AbilityKey.Cause);
 
