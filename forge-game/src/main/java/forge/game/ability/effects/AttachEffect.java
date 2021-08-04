@@ -12,7 +12,6 @@ import forge.game.ability.AbilityUtils;
 import forge.game.ability.SpellAbilityEffect;
 import forge.game.card.Card;
 import forge.game.card.CardCollection;
-import forge.game.card.CardCollectionView;
 import forge.game.card.CardLists;
 import forge.game.card.CardZoneTable;
 import forge.game.card.CardPredicates;
@@ -30,35 +29,8 @@ import com.google.common.collect.Maps;
 public class AttachEffect extends SpellAbilityEffect {
     @Override
     public void resolve(SpellAbility sa) {
-        final Card host = sa.getHostCard();
-        final Game game = host.getGame();
-
-        if (host.isAura() && sa.isSpell()) {
-            CardZoneTable table = new CardZoneTable();
-            host.setController(sa.getActivatingPlayer(), 0);
-
-            ZoneType previousZone = host.getZone().getZoneType();
-
-            CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
-            CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
-
-            Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
-            moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
-            moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
-
-            // The Spell_Permanent (Auras) version of this AF needs to
-            // move the card into play before Attaching
-            final Card c = game.getAction().moveToPlay(host, host.getController(), sa, moveParams);
-            sa.setHostCard(c);
-
-            ZoneType newZone = c.getZone().getZoneType();
-            if (newZone != previousZone) {
-                table.put(previousZone, newZone, c);
-            }
-            table.triggerChangesZoneAll(game, sa);
-        }
-
         final Card source = sa.getHostCard();
+        final Game game = source.getGame();
 
         CardCollection attachments;
 
@@ -151,6 +123,32 @@ public class AttachEffect extends SpellAbilityEffect {
 
             attachment.attachToEntity(attachTo);
         }
+        
+
+        if (source.isAura() && sa.isSpell()) {
+            CardZoneTable table = new CardZoneTable();
+            source.setController(sa.getActivatingPlayer(), 0);
+
+            ZoneType previousZone = source.getZone().getZoneType();
+
+            //CardCollectionView lastStateBattlefield = game.copyLastStateBattlefield();
+            //CardCollectionView lastStateGraveyard = game.copyLastStateGraveyard();
+
+            Map<AbilityKey, Object> moveParams = Maps.newEnumMap(AbilityKey.class);
+            //moveParams.put(AbilityKey.LastStateBattlefield, lastStateBattlefield);
+            //moveParams.put(AbilityKey.LastStateGraveyard, lastStateGraveyard);
+
+            // The Spell_Permanent (Auras) version of this AF needs to
+            // move the card into play before Attaching
+            final Card c = game.getAction().moveToPlay(source, source.getController(), sa, moveParams);
+
+            ZoneType newZone = c.getZone().getZoneType();
+            if (newZone != previousZone) {
+                table.put(previousZone, newZone, c);
+            }
+            table.triggerChangesZoneAll(game, sa);
+        }
+
     }
 
     @Override
