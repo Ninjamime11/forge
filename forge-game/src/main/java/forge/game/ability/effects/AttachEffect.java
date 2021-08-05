@@ -123,7 +123,6 @@ public class AttachEffect extends SpellAbilityEffect {
 
             attachment.attachToEntity(attachTo);
         }
-        
 
         if (source.isAura() && sa.isSpell()) {
             CardZoneTable table = new CardZoneTable();
