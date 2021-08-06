@@ -6,6 +6,6 @@ A:SP$ Attach | Cost$ 1 R R | ValidTgts$ Land | AILogic$ Curse
 T:Mode$ Taps | ValidCard$ Card.AttachedBy | Execute$ TrigDestroy | TriggerDescription$ When enchanted land becomes tapped, destroy it and CARDNAME deals 1 damage to that land's controller. That player attaches CARDNAME to a land of their choice.
 SVar:TrigDestroy:DB$ Destroy | Defined$ TriggeredCardLKICopy | SubAbility$ DBDmg
 SVar:DBDmg:DB$ DealDamage | Defined$ TriggeredCardController | NumDmg$ 1 | SubAbility$ DBAttach
-SVar:DBAttach:DB$ Attach | Object$ Self | Chooser$ TriggeredCardController | Choices$ Land
+SVar:DBAttach:DB$ Attach | Object$ Self | Chooser$ TriggeredCardController | Choices$ Land | AILogic$ Curs
 SVar:NonStackingAttachEffect:True
 Oracle:Enchant land\nWhen enchanted land becomes tapped, destroy it and Steam Vines deals 1 damage to that land's controller. That player attaches Steam Vines to a land of their choice.

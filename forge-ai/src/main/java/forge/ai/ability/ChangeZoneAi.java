@@ -1,12 +1,8 @@
 package forge.ai.ability;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import forge.game.GameEntity;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.base.Predicate;
@@ -919,6 +915,19 @@ public class ChangeZoneAi extends SpellAbilityAi {
                 }
             });
         }
+        if (sa.hasParam("AttachAfter")) {
+            list = CardLists.filter(list, new Predicate<Card>() {
+                @Override
+                public boolean apply(final Card c) {
+                    for (Card card : game.getCardsIn(ZoneType.Battlefield)) {
+                        if (card.isValid(sa.getParam("AttachAfter"), ai, c, sa)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            });
+        }
 
         if (list.size() < sa.getMinTargets()) {
             return false;
@@ -1708,6 +1717,12 @@ public class ChangeZoneAi extends SpellAbilityAi {
     public boolean confirmAction(Player player, SpellAbility sa, PlayerActionConfirmMode mode, String message) {
         // AI was never asked
         return true;
+    }
+
+    @Override
+    public <T extends GameEntity> T chooseSingleEntity(Player ai, SpellAbility sa, Collection<T> options, boolean isOptional, Player targetedPlayer, Map<String, Object> params) {
+        // Called when looking for creature to attach aura or equipment
+        return (T)ComputerUtilCard.getBestAI((Collection<Card>)options);
     }
 
     @Override

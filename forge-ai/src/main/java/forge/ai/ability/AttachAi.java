@@ -1,10 +1,6 @@
 package forge.ai.ability;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 import com.google.common.base.Predicate;
@@ -24,6 +20,7 @@ import forge.ai.PlayerControllerAi;
 import forge.ai.SpecialCardAi;
 import forge.ai.SpellAbilityAi;
 import forge.game.Game;
+import forge.game.GameEntity;
 import forge.game.GameObject;
 import forge.game.GlobalRuleChange;
 import forge.game.ability.AbilityFactory;
@@ -53,6 +50,7 @@ import forge.game.trigger.Trigger;
 import forge.game.trigger.TriggerType;
 import forge.game.zone.ZoneType;
 import forge.util.MyRandom;
+import forge.util.collect.FCollectionView;
 
 public class AttachAi extends SpellAbilityAi {
 
@@ -1728,6 +1726,10 @@ public class AttachAi extends SpellAbilityAi {
         return attachToCardAIPreferences(ai, sa, true);
     }
 
+    @Override
+    public <T extends GameEntity> T chooseSingleEntity(Player ai, SpellAbility sa, Collection<T> options, boolean isOptional, Player targetedPlayer, Map<String, Object> params) {
+        return (T)attachGeneralAI(ai, sa, (List<Card>)options, !isOptional, sa.getHostCard(), sa.getParam("AILogic"));
+    }
     @Override
     protected Player chooseSinglePlayer(Player ai, SpellAbility sa, Iterable<Player> options, Map<String, Object> params) {
         return attachToPlayerAIPreferences(ai, sa, true);
