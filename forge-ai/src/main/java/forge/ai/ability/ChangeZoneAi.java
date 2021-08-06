@@ -1722,7 +1722,7 @@ public class ChangeZoneAi extends SpellAbilityAi {
     @Override
     public <T extends GameEntity> T chooseSingleEntity(Player ai, SpellAbility sa, Collection<T> options, boolean isOptional, Player targetedPlayer, Map<String, Object> params) {
         // Called when looking for creature to attach aura or equipment
-        return (T)ComputerUtilCard.getBestAI((Collection<Card>)options);
+        return (T)AttachAi.attachGeneralAI(ai, sa, (List<Card>)options, !isOptional, sa.getHostCard(), sa.getParam("AILogic"));
     }
 
     @Override

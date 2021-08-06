@@ -1463,11 +1463,11 @@ public class AttachAi extends SpellAbilityAi {
      *            the logic
      * @return the card
      */
-    private static Card attachGeneralAI(final Player ai, final SpellAbility sa, final List<Card> list, final boolean mandatory,
+    public static Card attachGeneralAI(final Player ai, final SpellAbility sa, final List<Card> list, final boolean mandatory,
             final Card attachSource, final String logic) {
         Player prefPlayer = ai.getWeakestOpponent();
-        if ("Pump".equals(logic) || "Animate".equals(logic) || "Curiosity".equals(logic) || logic.equals("MoveTgtAura")
-                || logic.equals("MoveAllAuras")) {
+        if ("Pump".equals(logic) || "Animate".equals(logic) || "Curiosity".equals(logic) || "MoveTgtAura".equals(logic)
+                || "MoveAllAuras".equals(logic)) {
             prefPlayer = ai;
         }
         // Some ChangeType cards are beneficial, and PrefPlayer should be
@@ -1499,7 +1499,7 @@ public class AttachAi extends SpellAbilityAi {
             c = attachAIControlPreference(sa, prefList, mandatory, attachSource);
         } else if ("Curse".equals(logic)) {
             c = attachAICursePreference(sa, prefList, mandatory, attachSource, ai);
-        } else if ("Pump".equals(logic) || logic.startsWith("Move")) {
+        } else if ("Pump".equals(logic) || (logic != null && logic.startsWith("Move"))) {
             c = attachAIPumpPreference(ai, sa, prefList, mandatory, attachSource);
         } else if ("Curiosity".equals(logic)) {
             c = attachAICuriosityPreference(sa, prefList, mandatory, attachSource);
